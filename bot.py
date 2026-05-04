@@ -1,6 +1,8 @@
 import logging
 import os
 import asyncio
+from threading import Thread
+from flask import Flask
 from telegram import Update, ReplyKeyboardMarkup
 from telegram.ext import ApplicationBuilder, CommandHandler, MessageHandler, filters, ContextTypes
 from PyPDF2 import PdfReader, PdfWriter
@@ -11,6 +13,22 @@ logging.basicConfig(
 )
 
 BOT_TOKEN = os.getenv("BOT_TOKEN")
+
+# Flask web server for Render Web Service
+web_app = Flask(__name__)
+
+@web_app.route("/")
+def home():
+    return "Cloud PDF Compressor Bot is running on Render!"
+
+def run_web():
+    port = int(os.environ.get("PORT", 10000))
+    web_app.run(host="0.0.0.0", port=port)
+
+def keep_alive():
+    thread = Thread(target=run_web)
+    thread.daemon = True
+    thread.start()
 
 menu = ReplyKeyboardMarkup(
     [
@@ -115,6 +133,8 @@ async def handle_pdf(update: Update, context: ContextTypes.DEFAULT_TYPE):
     os.remove(output_path)
 
 if __name__ == "__main__":
+    keep_alive()
+
     loop = asyncio.new_event_loop()
     asyncio.set_event_loop(loop)
 
